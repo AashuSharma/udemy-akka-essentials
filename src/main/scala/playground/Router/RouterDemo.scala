@@ -1,7 +1,8 @@
 package playground.Router
 
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props, Terminated}
-import akka.routing.{ActorRefRoutee, RoundRobinRoutingLogic, Router}
+import akka.routing.{ActorRefRoutee, FromConfig, RoundRobinPool, RoundRobinRoutingLogic, Router}
+import com.typesafe.config.ConfigFactory
 
 object RouterDemo extends App{
 
@@ -41,8 +42,25 @@ object RouterDemo extends App{
 
   val system = ActorSystem("RouterSystem")
   val router = system.actorOf(Props[Master], "masterRouter")
-  for (i <- 1 to 10) {
+  /*for (i <- 1 to 10) {
     router ! s"[$i] Hi there!"
+  }*/
+
+  /**
+   * Method 2.1 => Using Router Actor
+   */
+  val master2 = system.actorOf(RoundRobinPool(5).props(Props[Slave]), "masterRouter2")
+/*  for (i <- 1 to 10) {
+    master2 ! s"[$i] Hi there!"
+  }*/
+
+  /**
+   * Method 2.2 => Using Router Actor via configuration
+   */
+  val system2 = ActorSystem("RouterSystem2", ConfigFactory.load().getConfig("RouterDemo"))
+  val master3 = system2.actorOf(FromConfig.props(Props[Slave]), "master3")
+  for (i <- 1 to 10) {
+    master3 ! s"[$i] Hi there!"
   }
 
 }
