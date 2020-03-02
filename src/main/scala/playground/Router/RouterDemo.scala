@@ -1,7 +1,7 @@
 package playground.Router
 
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props, Terminated}
-import akka.routing.{ActorRefRoutee, FromConfig, RoundRobinPool, RoundRobinRoutingLogic, Router}
+import akka.routing.{ActorRefRoutee, FromConfig, RoundRobinGroup, RoundRobinPool, RoundRobinRoutingLogic, Router}
 import com.typesafe.config.ConfigFactory
 
 object RouterDemo extends App{
@@ -59,8 +59,27 @@ object RouterDemo extends App{
    */
   val system2 = ActorSystem("RouterSystem2", ConfigFactory.load().getConfig("RouterDemo"))
   val master3 = system2.actorOf(FromConfig.props(Props[Slave]), "master3")
-  for (i <- 1 to 10) {
+/*  for (i <- 1 to 10) {
     master3 ! s"[$i] Hi there!"
-  }
+  }*/
 
+  /**
+   * Method 3.1 Router Group for actors declared somewhere else
+   */
+
+  val slavesPath = (1 to 5).map(i => system.actorOf(Props[Slave], s"slave_$i").path.toString).toList
+  val master4 = system.actorOf(RoundRobinGroup(slavesPath).props(), "master4")
+/*  for (i <- 1 to 10) {
+    master4 ! s"[$i] Hi there!"
+  }*/
+
+  /**
+   * Method 3.2 Router Group for actors somewhere else configuration
+   */
+  val system3 = ActorSystem("RouterSystem3", ConfigFactory.load().getConfig("RouterGroupDemo"))
+  (1 to 5).foreach(i => system3.actorOf(Props[Slave], s"slave_$i"))
+  val master5 = system3.actorOf(FromConfig.props(), "master5")
+  for (i <- 1 to 10) {
+    master5 ! s"[$i] Hi there!"
+  }
 }
